@@ -9,13 +9,35 @@ const cvTextDisplay = document.getElementById("cvTextDisplay");
 const loadingIndicator = document.getElementById("loadingIndicator");
 const errorMessage = document.getElementById("errorMessage");
 const errorText = document.getElementById("errorText");
-const tagButtons = document.querySelectorAll(".tag-button");
-const saveTagsButton = document.getElementById("saveTagsButton");
+
+// Elements for dropdown tagging
+const taggingControls = document.getElementById("taggingControls");
+const tagDropdown = document.getElementById("tagDropdown");
+const applyTagButton = document.getElementById("applyTagButton");
+const clearTagButton = document.getElementById("clearTagButton"); // New button
+
 const taggedDataDisplay = document.getElementById("taggedDataDisplay");
-const fillButtonsContainer = document.getElementById("fillButtonsContainer");
+
+// New elements for copy dropdowns
+const fillControls = document.getElementById("fillControls");
+const fillTagDropdown = document.getElementById("fillTagDropdown");
+const copySelectedButton = document.getElementById("copySelectedButton");
+const multiEntrySelectContainer = document.getElementById(
+  "multiEntrySelectContainer"
+);
+const fillMultiEntryDropdown = document.getElementById(
+  "fillMultiEntryDropdown"
+);
+const removeMultiEntryItemButton = document.getElementById(
+  "removeMultiEntryItemButton"
+); // New button
+const noTaggedDataMessage = document.getElementById("noTaggedDataMessage");
 
 let extractedCVText = "";
 let taggedData = {}; // Stores the manually tagged data
+
+// Define tags that can have multiple entries
+const MULTI_ENTRY_TAGS = ["Skills", "Experience", "Education"];
 
 /**
  * Displays an error message in the popup.
@@ -44,6 +66,7 @@ function showLoading() {
   uploadButton.disabled = true;
   cvFileInput.disabled = true;
   hideErrorMessage();
+  taggingControls.classList.add("hidden"); // Hide tagging controls during loading
 }
 
 /**
@@ -53,6 +76,10 @@ function hideLoading() {
   loadingIndicator.classList.add("hidden");
   uploadButton.disabled = false;
   cvFileInput.disabled = false;
+  // Show tagging controls only if CV text is available
+  if (extractedCVText) {
+    taggingControls.classList.remove("hidden");
+  }
 }
 
 /**
@@ -135,56 +162,115 @@ uploadButton.addEventListener("click", async () => {
       "Failed to parse CV. Please try again or use a different file."
     );
   } finally {
-    hideLoading();
+    hideLoading(); // This will now also show tagging controls if parsing was successful
   }
 });
 
 /**
- * Handles text selection and tagging.
+ * Handles text selection and tagging from the dropdown, and automatically saves the data.
  */
-tagButtons.forEach((button) => {
-  button.addEventListener("click", () => {
-    const selection = window.getSelection();
-    const selectedText = selection.toString().trim();
-    const tag = button.dataset.tag;
+applyTagButton.addEventListener("click", () => {
+  const selection = window.getSelection();
+  const selectedText = selection.toString().trim();
+  const tag = tagDropdown.value;
 
-    if (selectedText && tag) {
-      taggedData[tag] = selectedText;
-      displayTaggedData();
+  if (!selectedText) {
+    showErrorMessage(
+      'Please select some text in the "Extracted CV Text" area before tagging.'
+    );
+    return;
+  }
+  if (!tag) {
+    showErrorMessage("Please select a tag from the dropdown.");
+    return;
+  }
+
+  // Check if the tag is a multi-entry tag
+  if (MULTI_ENTRY_TAGS.includes(tag)) {
+    if (!taggedData[tag]) {
+      // If it's a multi-entry tag and doesn't exist, initialize as an array
+      taggedData[tag] = [selectedText];
+    } else if (Array.isArray(taggedData[tag])) {
+      // Check for duplicates before adding
+      if (taggedData[tag].includes(selectedText)) {
+        showErrorMessage(`"${selectedText}" is already added to ${tag}.`);
+        return; // Do not add duplicate
+      }
+      // If it's an array, push the new entry
+      taggedData[tag].push(selectedText);
     } else {
-      showErrorMessage(
-        'Please select some text in the "Extracted CV Text" area before tagging.'
-      );
+      // If it previously was a single entry, convert to array and add new entry
+      // Check for duplicates before converting and adding
+      if (taggedData[tag] === selectedText) {
+        showErrorMessage(`"${selectedText}" is already added to ${tag}.`);
+        return; // Do not add duplicate
+      }
+      taggedData[tag] = [taggedData[tag], selectedText];
     }
-  });
+  } else {
+    // For single-entry tags, overwrite the value
+    taggedData[tag] = selectedText;
+  }
+
+  displayTaggedData(); // Update display
+  saveTaggedData(); // Automatically save
+  tagDropdown.value = ""; // Reset dropdown after tagging
 });
 
 /**
- * Displays the currently tagged data.
+ * Handles clearing the data for a selected tag.
+ */
+clearTagButton.addEventListener("click", () => {
+  const tagToClear = tagDropdown.value;
+  if (!tagToClear) {
+    showErrorMessage("Please select a tag to clear from the dropdown.");
+    return;
+  }
+
+  // Using confirm for simplicity, consider a custom modal for production
+  if (confirm(`Are you sure you want to clear all data for "${tagToClear}"?`)) {
+    delete taggedData[tagToClear];
+    displayTaggedData();
+    saveTaggedData();
+    tagDropdown.value = ""; // Reset dropdown after clearing
+    clearTagButton.disabled = true; // Disable the button after clearing
+  }
+});
+
+// Enable/disable clearTagButton based on tagDropdown selection
+tagDropdown.addEventListener("change", () => {
+  if (tagDropdown.value) {
+    clearTagButton.disabled = false;
+  } else {
+    clearTagButton.disabled = true;
+  }
+});
+
+/**
+ * Displays the currently tagged data in JSON format.
  */
 function displayTaggedData() {
+  // Reverted to JSON.stringify for displaying the raw data structure
+  // This will show arrays for multi-entry tags as standard JSON arrays.
   taggedDataDisplay.textContent = JSON.stringify(taggedData, null, 2);
   updateFillButtons(); // Update form fill buttons when tagged data changes
 }
 
 /**
  * Saves the tagged data to Chrome local storage.
+ * This function is now called automatically after tagging.
  */
-saveTagsButton.addEventListener("click", () => {
-  if (Object.keys(taggedData).length === 0) {
-    showErrorMessage("No data has been tagged to save.");
-    return;
-  }
+function saveTaggedData() {
   chrome.storage.local.set({ cvTaggedData: taggedData }, () => {
     if (chrome.runtime.lastError) {
       console.error("Error saving data:", chrome.runtime.lastError);
       showErrorMessage("Error saving tagged data.");
     } else {
-      console.log("Tagged data saved:", taggedData);
-      // Optionally, show a success message
+      console.log("Tagged data saved automatically:", taggedData);
+      // Optionally, show a subtle success message if needed, but not an alert
     }
   });
-});
+}
 
 /**
  * Loads tagged data from Chrome local storage when the popup opens.
@@ -199,49 +285,247 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /**
- * Updates the form filling buttons based on the tagged data.
+ * Populates the primary tag dropdown and manages the visibility of copy controls.
  */
-function updateFillButtons() {
-  fillButtonsContainer.innerHTML = ""; // Clear existing buttons
+async function updateFillButtons() {
+  fillTagDropdown.innerHTML =
+    '<option value="">-- Select Field to Copy --</option>'; // Clear and reset
+  multiEntrySelectContainer.classList.add("hidden"); // Hide secondary dropdown by default
+  fillMultiEntryDropdown.innerHTML =
+    '<option value="">-- Select Item --</option>'; // Clear secondary dropdown
+  removeMultiEntryItemButton.disabled = true; // Disable remove button by default
+
   if (Object.keys(taggedData).length === 0) {
-    fillButtonsContainer.innerHTML =
-      '<p class="text-gray-600 text-sm">Upload and tag a CV to enable form filling options.</p>';
+    noTaggedDataMessage.classList.remove("hidden");
+    fillTagDropdown.disabled = true;
+    copySelectedButton.disabled = true;
+    return;
+  } else {
+    noTaggedDataMessage.classList.add("hidden");
+    fillTagDropdown.disabled = false;
+    copySelectedButton.disabled = false;
+  }
+
+  // Populate the primary dropdown with tagged data keys
+  for (const tag in taggedData) {
+    const option = document.createElement("option");
+    option.value = tag;
+    option.textContent = tag;
+    fillTagDropdown.appendChild(option);
+  }
+
+  // Get the current active tab to check its URL for copy button state
+  const [activeTab] = await chrome.tabs.query({
+    active: true,
+    currentWindow: true,
+  });
+  const isRestrictedUrl =
+    activeTab &&
+    activeTab.url &&
+    (activeTab.url.startsWith("chrome://") ||
+      activeTab.url.startsWith("about:"));
+
+  if (isRestrictedUrl) {
+    copySelectedButton.disabled = true;
+    copySelectedButton.classList.add("opacity-50", "cursor-not-allowed");
+    copySelectedButton.title =
+      "Cannot copy to clipboard on chrome:// or about: URLs";
+  } else {
+    copySelectedButton.disabled = false;
+    copySelectedButton.classList.remove("opacity-50", "cursor-not-allowed");
+    copySelectedButton.title = "";
+  }
+}
+
+/**
+ * Handles selection in the primary fill tag dropdown.
+ * Populates secondary dropdown if the selected tag is multi-entry.
+ */
+fillTagDropdown.addEventListener("change", () => {
+  const selectedTag = fillTagDropdown.value;
+  multiEntrySelectContainer.classList.add("hidden"); // Hide secondary dropdown by default
+  fillMultiEntryDropdown.innerHTML =
+    '<option value="">-- Select Item --</option>'; // Clear secondary dropdown
+  removeMultiEntryItemButton.disabled = true; // Disable remove button by default
+
+  if (
+    selectedTag &&
+    MULTI_ENTRY_TAGS.includes(selectedTag) &&
+    Array.isArray(taggedData[selectedTag])
+  ) {
+    // If it's a multi-entry tag, populate the secondary dropdown
+    multiEntrySelectContainer.classList.remove("hidden");
+    taggedData[selectedTag].forEach((item, index) => {
+      const option = document.createElement("option");
+      option.value = item; // The actual item text
+      option.textContent = `${index + 1}: ${item.substring(0, 50)}${
+        item.length > 50 ? "..." : ""
+      }`; // Show first 50 chars
+      fillMultiEntryDropdown.appendChild(option);
+    });
+  }
+});
+
+/**
+ * Enables/disables the removeMultiEntryItemButton based on secondary dropdown selection.
+ */
+fillMultiEntryDropdown.addEventListener("change", () => {
+  if (fillMultiEntryDropdown.value) {
+    removeMultiEntryItemButton.disabled = false;
+  } else {
+    removeMultiEntryItemButton.disabled = true;
+  }
+});
+
+/**
+ * Handles removing a selected item from a multi-entry tag.
+ */
+removeMultiEntryItemButton.addEventListener("click", () => {
+  const selectedTag = fillTagDropdown.value;
+  const itemToRemove = fillMultiEntryDropdown.value;
+
+  if (!selectedTag || !itemToRemove) {
+    showErrorMessage("Please select both a tag and an item to remove.");
     return;
   }
 
-  for (const tag in taggedData) {
-    const value = taggedData[tag];
-    const button = document.createElement("button");
-    button.className =
-      "fill-button bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-3 rounded-md shadow-sm transition duration-150 ease-in-out";
-    button.textContent = `Copy ${tag}`;
-    button.dataset.tag = tag;
-    button.dataset.value = value; // Store the value to be copied
+  if (
+    !MULTI_ENTRY_TAGS.includes(selectedTag) ||
+    !Array.isArray(taggedData[selectedTag])
+  ) {
+    showErrorMessage(
+      "Selected tag is not a multi-entry tag or has no items to remove."
+    );
+    return;
+  }
 
-    button.addEventListener("click", async () => {
-      try {
-        // Use chrome.scripting to execute a script in the active tab
-        await chrome.scripting.executeScript({
-          target: {
-            tabId: (
-              await chrome.tabs.query({ active: true, currentWindow: true })
-            )[0].id,
-          },
-          function: copyToClipboard,
-          args: [value], // Pass the value to the injected function
-        });
-        console.log(`Copied "${value}" to clipboard.`);
-        // Optionally, show a temporary success message
-      } catch (error) {
-        console.error("Failed to copy to clipboard:", error);
+  // Using confirm for simplicity, consider custom modal for production
+  if (
+    confirm(
+      `Are you sure you want to remove "${itemToRemove}" from "${selectedTag}"?`
+    )
+  ) {
+    taggedData[selectedTag] = taggedData[selectedTag].filter(
+      (item) => item !== itemToRemove
+    );
+
+    // If the array becomes empty, delete the tag entirely
+    if (taggedData[selectedTag].length === 0) {
+      delete taggedData[selectedTag];
+    }
+
+    displayTaggedData();
+    saveTaggedData();
+    // Reset dropdowns after removal
+    fillTagDropdown.value = "";
+    fillMultiEntryDropdown.innerHTML =
+      '<option value="">-- Select Item --</option>';
+    multiEntrySelectContainer.classList.add("hidden");
+    removeMultiEntryItemButton.disabled = true;
+  }
+});
+
+/**
+ * Handles the click event for the main copy button.
+ * Copies either the single value or the selected multi-entry item.
+ */
+copySelectedButton.addEventListener("click", async () => {
+  // Add a quick check to ensure the button isn't disabled (should be handled by updateFillButtons)
+  if (copySelectedButton.disabled) {
+    console.warn("Copy button was clicked but is disabled. Preventing action.");
+    showErrorMessage("Copy function is disabled for this page.");
+    return;
+  }
+
+  const selectedTag = fillTagDropdown.value;
+  let valueToCopy = "";
+
+  if (!selectedTag) {
+    showErrorMessage("Please select a field to copy from the dropdown.");
+    return;
+  }
+
+  if (
+    MULTI_ENTRY_TAGS.includes(selectedTag) &&
+    Array.isArray(taggedData[selectedTag])
+  ) {
+    // If it's a multi-entry tag
+    const selectedItem = fillMultiEntryDropdown.value;
+    if (selectedItem) {
+      valueToCopy = selectedItem; // Copy the specific selected item
+    } else {
+      // If no specific item is selected, copy all items joined by newlines
+      valueToCopy = taggedData[selectedTag].join("\n");
+      showErrorMessage(
+        `No specific item selected for ${selectedTag}. Copying all entries.`
+      );
+    }
+  } else {
+    // For single-entry tags, copy the direct value
+    valueToCopy = taggedData[selectedTag];
+  }
+
+  if (valueToCopy) {
+    try {
+      const [activeTab] = await chrome.tabs.query({
+        active: true,
+        currentWindow: true,
+      });
+
+      // Defensive checks for activeTab and its URL
+      if (!activeTab || !activeTab.id) {
+        console.error("Active tab or tab ID is missing.");
         showErrorMessage(
-          "Failed to copy to clipboard. Ensure you are on a valid webpage."
+          "Could not determine the active tab. Please ensure a tab is open."
+        );
+        return;
+      }
+
+      // Check for restricted URLs. It's crucial this check happens BEFORE executeScript.
+      if (
+        activeTab.url &&
+        (activeTab.url.startsWith("chrome://") ||
+          activeTab.url.startsWith("about:"))
+      ) {
+        console.warn(
+          "Attempted to copy on a restricted Chrome internal page:",
+          activeTab.url
+        );
+        showErrorMessage(
+          "Cannot copy to clipboard on this type of page (e.g., Chrome internal pages or about:blank)."
+        );
+        return;
+      }
+
+      // If we've passed all checks, proceed with executing the script
+      await chrome.scripting.executeScript({
+        target: { tabId: activeTab.id },
+        function: copyToClipboard,
+        args: [valueToCopy],
+      });
+      console.log(`Copied "${valueToCopy}" to clipboard.`);
+      // Optionally, show a temporary success message
+    } catch (error) {
+      console.error("Failed to copy to clipboard:", error);
+      // This catch block will primarily handle errors *other* than the chrome:// URL restriction,
+      // as that should be caught by the explicit 'if' condition above.
+      if (
+        error.message &&
+        error.message.includes("Cannot access a chrome:// URL")
+      ) {
+        showErrorMessage("Failed to copy. This is a restricted Chrome page.");
+      } else if (error.message && error.message.includes("No tab with id")) {
+        showErrorMessage("Failed to copy. Active tab not found or accessible.");
+      } else {
+        showErrorMessage(
+          "Failed to copy to clipboard. Ensure you are on a valid webpage and the extension has permission."
         );
       }
-    });
-    fillButtonsContainer.appendChild(button);
+    }
+  } else {
+    showErrorMessage("No data available to copy for the selected field.");
   }
-}
+});
 
 /**
  * Function to be injected into the content script to copy text to clipboard.
