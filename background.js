@@ -1,11 +1,8 @@
-// background.js (Service Worker)
-
-// Create context menu items on extension installation
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
     id: "fillName",
     title: "Fill Name",
-    contexts: ["editable"], // Only show for editable fields
+    contexts: ["editable"],
   });
   chrome.contextMenus.create({
     id: "fillEmail",
@@ -64,12 +61,9 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 });
 
-// Listen for context menu clicks
 chrome.contextMenus.onClicked.addListener((info, tab) => {
-  // Check if the clicked item is one of our "fill" options and if it's an editable element
   if (info.menuItemId.startsWith("fill") && info.editable) {
-    const tag = info.menuItemId.replace("fill", ""); // e.g., "fillName" -> "Name"
-    // Retrieve the tagged data from storage
+    const tag = info.menuItemId.replace("fill", "");
     chrome.storage.local.get("cvTaggedData", (result) => {
       if (chrome.runtime.lastError) {
         console.error("Error retrieving data:", chrome.runtime.lastError);
@@ -79,7 +73,6 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
       const valueToFill = taggedData[tag];
 
       if (valueToFill) {
-        // Execute a script in the current tab to fill the field
         chrome.scripting
           .executeScript({
             target: { tabId: tab.id },
@@ -94,7 +87,6 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
           });
       } else {
         console.warn(`No data found for tag: ${tag}`);
-        // Optionally, send a message to the content script to show a notification
         chrome.scripting.executeScript({
           target: { tabId: tab.id },
           function: showNotification,
@@ -124,8 +116,6 @@ function fillInputField(value) {
     activeElement.dispatchEvent(new Event("change", { bubbles: true }));
   } else {
     console.warn("No active input or textarea element to fill.");
-    // If no active element, try to paste into the last focused editable element
-    // This is a fallback and might not always work perfectly
     try {
       document.execCommand("insertText", false, value);
     } catch (e) {
@@ -157,16 +147,14 @@ function showNotification(message) {
   notificationDiv.textContent = message;
   document.body.appendChild(notificationDiv);
 
-  // Fade in
   setTimeout(() => {
     notificationDiv.style.opacity = "1";
   }, 100);
 
-  // Fade out and remove
   setTimeout(() => {
     notificationDiv.style.opacity = "0";
     notificationDiv.addEventListener("transitionend", () =>
       notificationDiv.remove()
     );
-  }, 3000); // Display for 3 seconds
+  }, 3000);
 }

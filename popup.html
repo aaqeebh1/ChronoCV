@@ -7,7 +7,6 @@
     <title>ChronoCV</title>
     <link rel="stylesheet" href="popup.css">
     <style>
-        /* Custom styles for Inter font and rounded corners */
         body {
             font-family: "Inter", sans-serif;
         }
@@ -26,26 +25,6 @@
     <div class="container mx-auto bg-white rounded-lg shadow-lg p-6">
         <h1 class="text-2xl font-bold mb-4 text-center text-gray-800">ChronoCV</h1>
 
-        <div class="mb-6">
-            <label for="cvFile" class="block text-sm font-medium text-gray-700 mb-2">Upload CV (PDF, DOCX, TXT):</label>
-            <input type="file" id="cvFile" accept=".pdf,.docx,.txt"
-                class="block w-full text-sm text-gray-900 border border-gray-300 rounded-md cursor-pointer bg-gray-50 focus:outline-none focus:border-blue-500 focus:ring-blue-500 p-2.5">
-            <button id="uploadButton"
-                class="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md shadow-sm transition duration-150 ease-in-out">Upload
-                and Parse CV</button>
-        </div>
-
-        <div id="loadingIndicator" class="hidden text-center text-blue-600 mb-4">
-            <svg class="animate-spin h-5 w-5 text-blue-600 inline-block mr-2" xmlns="http://www.w3.org/2000/svg"
-                fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-                </path>
-            </svg>
-            Parsing CV...
-        </div>
-
         <div id="errorMessage"
             class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md relative mb-4"
             role="alert">
@@ -53,60 +32,20 @@
             <span class="block sm:inline" id="errorText"></span>
         </div>
 
-        <div id="taggingControls" class="mb-6 hidden">
-            <h2 class="text-xl font-semibold mb-2 text-gray-800">Tag Selected Text:</h2>
-            <div class="flex items-center gap-2 mb-4">
-                <select id="tagDropdown"
-                    class="block w-full text-sm text-gray-900 border border-gray-300 rounded-md cursor-pointer bg-gray-50 focus:outline-none focus:border-blue-500 focus:ring-blue-500 p-2.5">
-                    <option value="">-- Select Tag --</option>
-                    <option value="Name">Name</option>
-                    <option value="Email">Email</option>
-                    <option value="Phone">Phone</option>
-                    <option value="Address">Address</option>
-                    <option value="Skills">Skills</option>
-                    <option value="Experience">Experience</option>
-                    <option value="Education">Education</option>
-                    <option value="Summary">Summary</option>
-                    <option value="LinkedIn">LinkedIn</option>
-                    <option value="Website">Website</option>
-                    <option value="Github">Github</option>
-                    <option value="Other">Other</option>
-                </select>
-                <button id="applyTagButton"
-                    class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-md shadow-sm transition duration-150 ease-in-out">Apply
-                    Tag</button>
-            </div>
-            <button id="clearTagButton"
-                class="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-md shadow-sm transition duration-150 ease-in-out mt-2"
-                disabled>Clear Selected Tag</button>
+        <div class="mb-6">
+            <button id="openParserButton"
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md shadow-sm transition duration-150 ease-in-out">Open
+                CV Parser & Tagger</button>
         </div>
 
         <div class="mb-6">
-            <h2 class="text-xl font-semibold mb-2 text-gray-800">Extracted CV Text:</h2>
-            <div id="cvTextDisplay"
-                class="bg-gray-50 border border-gray-300 rounded-md p-4 h-64 overflow-y-auto text-gray-700 text-sm whitespace-pre-wrap">
-                Upload a CV to see its content here.
-            </div>
-        </div>
-
-        <div class="mb-6">
-            <h2 class="text-xl font-semibold mb-2 text-gray-800">Tagged Data:</h2>
-            <div id="taggedDataDisplay"
-                class="bg-gray-50 border border-gray-300 rounded-md p-4 h-48 overflow-y-auto text-gray-700 text-sm whitespace-pre-wrap">
-                No data tagged yet.
-            </div>
-        </div>
-
-        <div>
-            <h2 class="text-xl font-semibold mb-2 text-gray-800">Fill Form Fields:</h2>
-            <div id="fillControls" class="flex flex-col gap-2">
+            <h2 class="text-xl font-semibold mb-2 text-gray-800">Manual Copy:</h2>
+            <div id="fillControls" class="flex flex-col gap-2 mb-4">
                 <div class="flex items-center gap-2">
                     <select id="fillTagDropdown"
                         class="block w-full text-sm text-gray-900 border border-gray-300 rounded-md cursor-pointer bg-gray-50 focus:outline-none focus:border-blue-500 focus:ring-blue-500 p-2.5">
                         <option value="">-- Select Field to Copy --</option>
                     </select>
-                    <button id="copySelectedButton"
-                        class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-md shadow-sm transition duration-150 ease-in-out">Copy</button>
                 </div>
                 <div id="multiEntrySelectContainer" class="hidden flex items-center gap-2">
                     <select id="fillMultiEntryDropdown"
@@ -115,16 +54,27 @@
                     </select>
                     <button id="removeMultiEntryItemButton"
                         class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-md shadow-sm transition duration-150 ease-in-out"
-                        disabled>Remove Item</button>
+                        disabled>Remove</button>
                 </div>
                 <p id="noTaggedDataMessage" class="text-gray-600 text-sm">Upload and tag a CV to enable form filling
                     options.</p>
             </div>
+
+            <div class="mb-4">
+                <h2 class="text-xl font-semibold mb-2 text-gray-800">Selected Tagged Data:</h2>
+                <div id="taggedDataPreview"
+                    class="bg-gray-50 border border-gray-300 rounded-md p-4 h-48 overflow-y-auto text-gray-700 text-sm whitespace-pre-wrap">
+                    Select a field above to preview its tagged data.
+                </div>
+            </div>
+
+            <button id="copySelectedButton"
+                class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-md shadow-sm transition duration-150 ease-in-out mt-2">Copy
+                Selected Data</button>
         </div>
+
     </div>
 
-    <script src="pdf.min.js"></script>
-    <script src="mammoth.browser.min.js"></script>
     <script src="popup.js"></script>
 </body>
 
