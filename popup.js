@@ -22,7 +22,17 @@ const taggedDataPreview = document.getElementById("taggedDataPreview");
 const copySelectedButton = document.getElementById("copySelectedButton");
 
 let taggedData = {};
-const MULTI_ENTRY_TAGS = ["Skills", "Experience", "Education"];
+const MULTI_ENTRY_TAGS = [
+  "Skills",
+  "Experience",
+  "Education",
+  "Projects",
+  "Awards",
+  "Certifications",
+  "Languages",
+  "Links",
+];
+const LINK_GROUP_TAG = "Links";
 
 /**
  * Displays an error message in the popup.
@@ -54,7 +64,7 @@ openParserButton.addEventListener("click", () => {
  * Displays the currently tagged data in a formatted way in the preview area.
  * If a specific tag and optionally an item are provided, only that data is shown.
  * @param {string} [tagToDisplay] - Optional tag name to display.
- * @param {string} [itemToDisplay] - Optional specific item from a multi-entry tag to display.
+ * @param {object|string} [itemToDisplay] - Optional specific item from a multi-entry tag to display (can be object or string).
  */
 function displayTaggedDataPreview(tagToDisplay, itemToDisplay = null) {
   if (!taggedDataPreview) {
@@ -64,41 +74,82 @@ function displayTaggedDataPreview(tagToDisplay, itemToDisplay = null) {
 
   if (Object.keys(taggedData).length === 0) {
     taggedDataPreview.innerHTML =
-      "Select a field below to preview its tagged data."; // Use innerHTML
+      "No data tagged yet. Open CV Parser & Tagger to get started.";
     return;
   }
 
   if (!tagToDisplay) {
     taggedDataPreview.innerHTML =
-      "Select a field above to preview its tagged data."; // Use innerHTML
+      "Select a field above to preview its tagged data.";
     return;
   }
 
   const data = taggedData[tagToDisplay];
-  let formattedHtml = ""; // Changed to formattedHtml
+  let formattedHtml = "";
 
   if (data) {
     if (MULTI_ENTRY_TAGS.includes(tagToDisplay) && Array.isArray(data)) {
-      if (itemToDisplay !== null && data.includes(itemToDisplay)) {
-        formattedHtml += `<strong>${tagToDisplay} :</strong><br>`; // Use strong and br
-        formattedHtml += `<span>${itemToDisplay}</span>`; // Use span
+      // Handle multi-entry tags (e.g., Skills, Experience, Education, Links)
+      if (itemToDisplay !== null) {
+        // If a specific item is selected from secondary dropdown
+        formattedHtml += `<strong>${tagToDisplay} (Selected Item):</strong><br>`;
+        if (
+          tagToDisplay === LINK_GROUP_TAG &&
+          typeof itemToDisplay === "object" &&
+          itemToDisplay.url
+        ) {
+          // Specific formatting for selected link item
+          formattedHtml += `<span><strong>${itemToDisplay.type}:</strong> <a href="${itemToDisplay.url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">${itemToDisplay.url}</a></span>`;
+        } else {
+          // For other multi-entry items (like Experience text)
+          formattedHtml += `<span>${itemToDisplay}</span>`;
+        }
       } else {
-        formattedHtml += `<strong>${tagToDisplay}:</strong><br>`; // Use strong and br
-        formattedHtml += `<ul>`; // Start unordered list
-        data.forEach((item) => {
-          formattedHtml += `<li>${item}</li>`; // List item
-        });
-        formattedHtml += `</ul>`; // End unordered list
+        // Display all items for the multi-entry tag if no specific item is selected
+        formattedHtml += `<strong>${tagToDisplay}:</strong><br>`;
+        if (data.length > 0) {
+          formattedHtml += `<ul>`;
+          data.forEach((item) => {
+            if (
+              tagToDisplay === LINK_GROUP_TAG &&
+              typeof item === "object" &&
+              item.url
+            ) {
+              formattedHtml += `<li><strong>${item.type}:</strong> <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">${item.url}</a></li>`;
+            } else {
+              formattedHtml += `<li>${item}</li>`;
+            }
+          });
+          formattedHtml += `</ul>`;
+        } else {
+          formattedHtml += `<em>No entries for ${tagToDisplay}.</em>`;
+        }
       }
     } else {
-      formattedHtml += `<strong>${tagToDisplay}:</strong><br>`; // Use strong and br
-      formattedHtml += `<span>${data}</span>`; // Use span
+      // Display single-entry tag (including custom 'Other' tags)
+      formattedHtml += `<strong>${tagToDisplay}:</strong><br>`;
+      if (
+        typeof data === "object" &&
+        data !== null &&
+        data.name &&
+        data.value
+      ) {
+        formattedHtml += `<span><strong>${data.name}:</strong> ${data.value}</span>`;
+      } else if (
+        typeof data === "string" &&
+        (data.startsWith("http://") || data.startsWith("https://"))
+      ) {
+        // Make single URL tags clickable
+        formattedHtml += `<span><a href="${data}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">${data}</a></span>`;
+      } else {
+        formattedHtml += `<span>${data}</span>`;
+      }
     }
   } else {
-    formattedHtml = `No data tagged for "<strong>${tagToDisplay}</strong>".`; // Use strong
+    formattedHtml = `No data tagged for "<strong>${tagToDisplay}</strong>".`;
   }
 
-  taggedDataPreview.innerHTML = formattedHtml; // Use innerHTML
+  taggedDataPreview.innerHTML = formattedHtml;
 }
 
 /**
@@ -190,20 +241,49 @@ fillTagDropdown.addEventListener("change", () => {
     '<option value="">-- Select Item --</option>';
   removeMultiEntryItemButton.disabled = true;
 
+  // Initially display all items for multi-entry tags, or single value for others
+  // This line is important: it ensures the preview updates when the primary dropdown changes
   displayTaggedDataPreview(selectedTag);
 
   if (
-    selectedTag &&
     MULTI_ENTRY_TAGS.includes(selectedTag) &&
     Array.isArray(taggedData[selectedTag])
   ) {
     multiEntrySelectContainer.classList.remove("hidden");
     taggedData[selectedTag].forEach((item, index) => {
       const option = document.createElement("option");
-      option.value = item;
-      option.textContent = `${index + 1}: ${item.substring(0, 50)}${
-        item.length > 50 ? "..." : ""
-      }`;
+      // For 'Links' tag, item is an object {type, url}
+      if (
+        selectedTag === LINK_GROUP_TAG &&
+        typeof item === "object" &&
+        item.type &&
+        item.url
+      ) {
+        option.value = JSON.stringify(item); // Store the object as a string
+        option.textContent = `${index + 1}: ${item.type} - ${item.url.substring(
+          0,
+          40
+        )}${item.url.length > 40 ? "..." : ""}`;
+      } else if (
+        typeof item === "object" &&
+        item !== null &&
+        item.name &&
+        item.value
+      ) {
+        // Handle custom 'Other' tags if they somehow end up in a multi-entry array (shouldn't happen with current parser logic)
+        option.value = JSON.stringify(item);
+        option.textContent = `${index + 1}: ${
+          item.name
+        } - ${item.value.substring(0, 40)}${
+          item.value.length > 40 ? "..." : ""
+        }`;
+      } else {
+        // For non-structured multi-entry (like skills), store and display as string
+        option.value = item;
+        option.textContent = `${index + 1}: ${item.substring(0, 50)}${
+          item.length > 50 ? "..." : ""
+        }`;
+      }
       fillMultiEntryDropdown.appendChild(option);
     });
   }
@@ -214,14 +294,25 @@ fillTagDropdown.addEventListener("change", () => {
  */
 fillMultiEntryDropdown.addEventListener("change", () => {
   const selectedTag = fillTagDropdown.value;
-  const selectedItem = fillMultiEntryDropdown.value;
+  const selectedItemValue = fillMultiEntryDropdown.value;
 
-  if (selectedItem) {
+  if (selectedItemValue) {
     removeMultiEntryItemButton.disabled = false;
-    displayTaggedDataPreview(selectedTag, selectedItem);
+    let itemToPreview = selectedItemValue;
+    // If it's a 'Links' tag, parse the JSON string back to an object for preview
+    if (selectedTag === LINK_GROUP_TAG) {
+      try {
+        itemToPreview = JSON.parse(selectedItemValue);
+      } catch (e) {
+        console.error("Error parsing link item JSON:", e);
+        // Fallback to raw string if parsing fails
+        itemToPreview = selectedItemValue;
+      }
+    }
+    displayTaggedDataPreview(selectedTag, itemToPreview); // Pass the specific item to display
   } else {
     removeMultiEntryItemButton.disabled = true;
-    displayTaggedDataPreview(selectedTag);
+    displayTaggedDataPreview(selectedTag); // Revert to showing all items for the tag
   }
 });
 
@@ -230,9 +321,9 @@ fillMultiEntryDropdown.addEventListener("change", () => {
  */
 removeMultiEntryItemButton.addEventListener("click", () => {
   const selectedTag = fillTagDropdown.value;
-  const itemToRemove = fillMultiEntryDropdown.value;
+  const itemToRemoveValue = fillMultiEntryDropdown.value;
 
-  if (!selectedTag || !itemToRemove) {
+  if (!selectedTag || !itemToRemoveValue) {
     showErrorMessage("Please select both a tag and an item to remove.");
     return;
   }
@@ -248,19 +339,32 @@ removeMultiEntryItemButton.addEventListener("click", () => {
   }
 
   if (
-    confirm(
-      `Are you sure you want to remove "${itemToRemove}" from "${selectedTag}"?`
-    )
+    confirm(`Are you sure you want to remove this entry from "${selectedTag}"?`)
   ) {
-    taggedData[selectedTag] = taggedData[selectedTag].filter(
-      (item) => item !== itemToRemove
-    );
+    const indexToRemove = taggedData[selectedTag].findIndex((item) => {
+      if (selectedTag === LINK_GROUP_TAG && typeof item === "object") {
+        return JSON.stringify(item) === itemToRemoveValue;
+      }
+      return item === itemToRemoveValue;
+    });
+
+    if (indexToRemove > -1) {
+      taggedData[selectedTag].splice(indexToRemove, 1);
+    }
 
     if (taggedData[selectedTag].length === 0) {
       delete taggedData[selectedTag];
     }
 
-    displayTaggedDataPreview(fillTagDropdown.value);
+    // After removal, re-evaluate what to display
+    // If the tag still exists and has items, display all of them
+    // Otherwise, clear the preview or show a default message
+    if (taggedData[selectedTag] && taggedData[selectedTag].length > 0) {
+      displayTaggedDataPreview(selectedTag);
+    } else {
+      displayTaggedDataPreview(); // Show default message if tag is now empty or removed
+    }
+
     saveTaggedData();
     fillTagDropdown.value = "";
     fillMultiEntryDropdown.innerHTML =
@@ -291,12 +395,40 @@ copySelectedButton.addEventListener("click", async () => {
   }
 
   if (
+    selectedTag === LINK_GROUP_TAG &&
+    Array.isArray(taggedData[selectedTag])
+  ) {
+    const selectedItemValue = fillMultiEntryDropdown.value;
+    if (selectedItemValue) {
+      // Copy specific link object's URL
+      try {
+        const linkObj = JSON.parse(selectedItemValue);
+        valueToCopy = linkObj.url;
+      } catch (e) {
+        console.error("Error parsing link item for copy:", e);
+        showErrorMessage("Error processing link data for copy.");
+        return;
+      }
+    } else {
+      // Copy all links, formatted
+      let allFormattedLinks = "";
+      taggedData[selectedTag].forEach((linkObj) => {
+        if (linkObj.url) {
+          allFormattedLinks += `${linkObj.type}: ${linkObj.url}\n`;
+        }
+      });
+      valueToCopy = allFormattedLinks.trim();
+      showErrorMessage(
+        `No specific link selected for ${selectedTag}. Copying all links.`
+      );
+    }
+  } else if (
     MULTI_ENTRY_TAGS.includes(selectedTag) &&
     Array.isArray(taggedData[selectedTag])
   ) {
-    const selectedItem = fillMultiEntryDropdown.value;
-    if (selectedItem) {
-      valueToCopy = selectedItem;
+    const selectedItemValue = fillMultiEntryDropdown.value;
+    if (selectedItemValue) {
+      valueToCopy = selectedItemValue;
     } else {
       valueToCopy = taggedData[selectedTag].join("\n");
       showErrorMessage(
@@ -304,7 +436,13 @@ copySelectedButton.addEventListener("click", async () => {
       );
     }
   } else {
-    valueToCopy = taggedData[selectedTag];
+    // For single-entry tags, including custom 'Other' tags
+    const data = taggedData[selectedTag];
+    if (typeof data === "object" && data !== null && data.name && data.value) {
+      valueToCopy = data.value; // Copy only the value for custom 'Other' tags
+    } else {
+      valueToCopy = data;
+    }
   }
 
   if (valueToCopy) {

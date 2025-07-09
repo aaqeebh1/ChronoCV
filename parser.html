@@ -45,7 +45,10 @@
 
 <body class="bg-gray-100 p-4 min-h-screen flex flex-col items-center justify-center">
     <div class="container mx-auto bg-white rounded-lg shadow-lg p-6 max-w-3xl w-full">
-        <h1 class="text-3xl font-bold mb-6 text-center text-gray-800">ChronoCV - Parse & Tag Your CV</h1>
+        <!-- Replaced h1 with img and h2 -->
+        <img src="./icons/ChronoCVLogo.png" alt="ChronoCV Logo" id="logo" class="logo mb-6">
+        <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Parse & Tag Your CV</h2>
+
 
         <!-- File Upload Section -->
         <div class="mb-6 border-b pb-4 border-gray-200">
@@ -90,7 +93,7 @@
             <span class="block sm:inline" id="errorText"></span>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2"> <!-- Removed gap-12 here, now handled in CSS -->
             <!-- CV Text Display Section -->
             <div>
                 <h2 class="text-xl font-semibold mb-2 text-gray-800">Extracted CV Text:</h2>
@@ -102,7 +105,6 @@
 
             <!-- Manual Tagging UI & Tagged Data Display -->
             <div>
-                <!-- Manual Tagging UI - Dropdown -->
                 <div id="taggingControls" class="mb-4 hidden">
                     <h2 class="text-xl font-semibold mb-2 text-gray-800">Tag Selected Text:</h2>
                     <div class="flex items-center gap-2 mb-2">
@@ -117,9 +119,7 @@
                             <option value="Experience">Experience</option>
                             <option value="Education">Education</option>
                             <option value="Summary">Summary</option>
-                            <option value="LinkedIn">LinkedIn</option>
-                            <option value="Website">Website</option>
-                            <option value="Github">Github</option>
+                            <option value="Links">Links</option>
                             <option value="Other">Other</option>
                         </select>
                         <button id="applyTagButton"
@@ -131,9 +131,45 @@
                         disabled>Clear Selected Tag</button>
                 </div>
 
+                <!-- NEW: Direct Link Input Section (visible when 'Links' is selected) -->
+                <div id="directLinkInputSection" class="mb-4 hidden">
+                    <h2 class="text-xl font-semibold mb-2 text-gray-800">Specific Link Input:</h2>
+                    <div class="flex flex-col gap-2">
+                        <label for="linkedInInput" class="block text-sm font-medium text-gray-700">LinkedIn URL:</label>
+                        <input type="url" id="linkedInInput" class="input-field"
+                            placeholder="e.g., https://linkedin.com/in/yourname">
+
+                        <label for="githubInput" class="block text-sm font-medium text-gray-700">GitHub URL:</label>
+                        <input type="url" id="githubInput" class="input-field"
+                            placeholder="e.g., https://github.com/yourusername">
+
+                        <label for="websiteInput" class="block text-sm font-medium text-gray-700">Personal
+                            Website/Portfolio URL:</label>
+                        <input type="url" id="websiteInput" class="input-field"
+                            placeholder="e.g., https://yourportfolio.com">
+                    </div>
+                </div>
+
+                <!-- NEW: Custom Tag Input Section (visible when 'Other' is selected) -->
+                <div id="customTagInputSection" class="mb-4 hidden">
+                    <h2 class="text-xl font-semibold mb-2 text-gray-800">Custom Tag & Value:</h2>
+                    <div class="flex flex-col gap-2">
+                        <label for="customTagNameInput" class="block text-sm font-medium text-gray-700">Custom Tag
+                            Name:</label>
+                        <input type="text" id="customTagNameInput" class="input-field"
+                            placeholder="e.g., Portfolio, Blog, ResearchGate">
+
+                        <label for="customTagValueInput" class="block text-sm font-medium text-gray-700">Custom Tag
+                            Value (URL or Text):</label>
+                        <input type="url" id="customTagValueInput" class="input-field"
+                            placeholder="e.g., https://yourblog.com or some text">
+                    </div>
+                </div>
+
+
                 <!-- Display Tagged Data -->
                 <div>
-                    <h2 class="text-xl font-semibold mb-2 text-gray-800">Tagged Data (JSON):</h2>
+                    <h2 class="text-xl font-semibold mb-2 text-gray-800">Tagged Data:</h2>
                     <div id="taggedDataDisplay"
                         class="bg-gray-50 border border-gray-300 rounded-md p-4 h-96 overflow-y-auto text-gray-700 text-sm whitespace-pre-wrap">
                         No data tagged yet.

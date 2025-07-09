@@ -20,12 +20,23 @@ body {
     0 6px 12px -4px rgba(0, 0, 0, 0.08); /* Stronger shadow */
   padding: 1.5rem; /* Padding inside the container */
   width: 100%; /* Take full width of the body's padding */
-  max-width: 48rem; /* Increased max-width for parser page */
+  max-width: 80rem; /* Increased max-width to 80rem as requested */
   box-sizing: border-box; /* Include padding in element's total width and height */
+}
+
+/* Logo styling */
+#logo {
+  display: block; /* Ensures it takes its own line */
+  margin-left: auto; /* Center horizontally */
+  margin-right: auto; /* Center horizontally */
+  max-width: 150px; /* Adjust as needed */
+  height: auto;
+  margin-bottom: 1.5rem; /* mb-6 from HTML */
 }
 
 /* Heading styles */
 h1 {
+  /* This is no longer used for ChronoCV title, but kept for general h1 if any */
   font-size: 1.875rem; /* text-3xl */
   font-weight: 700; /* font-bold */
   margin-bottom: 1.5rem; /* mb-6 */
@@ -33,16 +44,18 @@ h1 {
   color: #1f2937; /* text-gray-800 */
 }
 
+/* h2 for "Parse & Tag Your CV" and other main section titles */
 h2 {
-  font-size: 1.125rem; /* text-xl, adjusted for better hierarchy */
-  font-weight: 600; /* font-semibold */
-  margin-bottom: 0.75rem; /* mb-3 */
+  font-size: 1.5rem; /* Adjusted for h2 as main title now */
+  font-weight: 700; /* font-bold */
+  margin-bottom: 1.5rem; /* mb-6 */
+  text-align: center; /* text-center */
   color: #1f2937; /* text-gray-800 */
 }
 
+/* h3 for "Tag:" titles within tagged data display */
 h3 {
-  /* Keep for potential future use or if other h3s exist */
-  font-size: 1rem; /* text-lg */
+  font-size: 1.125rem; /* text-lg, adjusted for better hierarchy */
   font-weight: 600; /* font-semibold */
   margin-bottom: 0.5rem; /* mb-2 */
   color: #1f2937; /* text-gray-800 */
@@ -65,8 +78,9 @@ input[type="file"] {
 
 select,
 .input-field,
-textarea {
-  /* Apply general input styles to select, .input-field, and textarea */
+textarea,
+input[type="url"] {
+  /* Added input[type="url"] */
   display: block;
   width: 100%;
   font-size: 0.875rem; /* text-sm */
@@ -87,7 +101,9 @@ textarea {
 }
 select:focus,
 .input-field:focus,
-textarea:focus {
+textarea:focus,
+input[type="url"]:focus {
+  /* Added input[type="url"] */
   outline: none;
   border-color: #3b82f6; /* focus:border-blue-500 */
   box-shadow: 0 0 0 1px #3b82f6; /* focus:ring-blue-500 */
@@ -95,7 +111,7 @@ textarea:focus {
 /* Override custom arrow for actual input[type="text"] fields */
 input:not([type="file"]):not([type="checkbox"]):not([type="radio"]):not(
     .input-field
-  ) {
+  ):not([type="url"]) {
   background-image: none;
 }
 
@@ -104,7 +120,7 @@ button {
   font-weight: 600; /* font-semibold */
   padding: 0.625rem 1rem; /* py-2.5 px-4 - slightly more padding */
   border-radius: 0.375rem; /* rounded-md */
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow for all buttons */
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm from popup.css */
   transition-property: background-color, border-color, color, fill, stroke,
     opacity, box-shadow, transform, filter, backdrop-filter;
   transition-duration: 150ms;
@@ -118,42 +134,57 @@ button:disabled {
   cursor: not-allowed;
 }
 
-/* Custom "Choose File" button (label) styling */
+/* Custom "Choose File" button (label) styling - matches popup's openParserButton */
 #chooseFileButton {
-  color: #333333; /* Darker text for "Choose File" equivalent */
-  display: inline-flex; /* Make it behave like a button */
+  background-color: #9dc183; /* From popup.css */
+  color: #333333; /* From popup.css */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Retained for visual consistency with popup's specific button */
+  border: 1px solid #cccccc; /* From popup.css */
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  white-space: nowrap; /* Prevent text wrapping */
-  width: 1.5rem; /* Adjust size as needed */
-  height: 1.5rem;
-  padding: 0.5rem;
+  white-space: nowrap;
+  padding: 0.625rem 1rem;
   margin: 0;
+  height: 1rem;
 }
 #chooseFileButton:hover:not(:disabled) {
-  background-color: #d0d0d0;
+  background-color: #50c878; /* From popup.css */
+}
+#chooseFileButton img {
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
-/* Specific button styles to match image's green/earthy tone */
+/* tag Dropdown */
+#tagDropdown {
+  width: 485px;
+}
+
+/* Specific button styles to match popup's copySelectedButton */
 /* Upload Button */
 #uploadButton {
-  background-color: #9dc183; /* A shade of green */
-  color: #ffffff;
+  background-color: #9dc183; /* Matched popup.css copySelectedButton */
+  color: #ffffff; /* Matched popup.css copySelectedButton */
+  height: 2.375rem;
 }
 #uploadButton:hover:not(:disabled) {
-  background-color: #50c878; /* Darker green on hover */
+  background-color: #50c878; /* Matched popup.css copySelectedButton */
 }
 
 /* Apply Tag Button */
 #applyTagButton {
-  background-color: #9dc183; /* Same green */
-  color: #ffffff;
+  background-color: #9dc183; /* Matched popup.css copySelectedButton */
+  color: #ffffff; /* Matched popup.css copySelectedButton */
+  height: 2.375rem;
+  margin-left: 10px;
+  width: 100px;
 }
 #applyTagButton:hover:not(:disabled) {
-  background-color: #50c878; /* Darker green on hover */
+  background-color: #50c878; /* Matched popup.css copySelectedButton */
 }
 
-/* Clear Tag Button (Red) */
+/* Clear Tag Button (Red) - matches popup's removeMultiEntryItemButton */
 #clearTagButton {
   background-color: #ef4444; /* bg-red-500 */
   color: #ffffff;
@@ -175,6 +206,14 @@ button:disabled {
   font-size: 0.875rem; /* text-sm */
   white-space: pre-wrap; /* whitespace-pre-wrap */
   line-height: 1.5; /* Improve readability */
+}
+/* Style for links within the display areas */
+#taggedDataDisplay a {
+  color: #2563eb; /* text-blue-600 */
+  text-decoration: none; /* Remove underline by default */
+}
+#taggedDataDisplay a:hover {
+  text-decoration: underline; /* Add underline on hover */
 }
 
 /* File Name Display Span */
@@ -269,6 +308,8 @@ button:disabled {
 
 .grid {
   display: grid;
+  /* Explicitly set gap here as requested */
+  gap: 2.5rem; /* Equivalent to gap-10 or 40px, adjust as needed */
 }
 .grid-cols-1 {
   grid-template-columns: repeat(1, minmax(0, 1fr));

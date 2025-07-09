@@ -33,6 +33,7 @@ h1 {
   color: #1f2937; /* text-gray-800 */
 }
 
+
 h2 {
   font-size: 1.125rem; /* text-xl, slightly adjusted for better hierarchy */
   font-weight: 600; /* font-semibold */
@@ -47,6 +48,14 @@ label {
   font-weight: 500; /* font-medium */
   color: #374151; /* text-gray-700 */
   margin-bottom: 0.5rem;
+}
+
+/* Logo styles */
+.logo {
+  display: block;
+  margin: 0 auto 1.5rem; /* Center the logo and add space below */
+  width: 75px; /* Fixed width for the logo */
+  height: auto; /* Maintain aspect ratio */
 }
 
 /* Input and Select field styles */
